@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lapa — snow that lands on your Mac windows</title>
+<meta name="description" content="Lapa is a small menu bar app that lets snow fall across your Mac and pile up on the windows you are not using. One-time purchase, 7-day free trial.">
+<!--
+  Before publishing, replace the placeholder:
+    CHECKOUT_URL  your checkout page (also set Config.buyURL in the app)
+    Lapa.dmg      is linked relatively: upload it next to this file (made by Lapa/dmg.sh)
+-->
+<style>
+  :root {
+    --paper: #f4f1ea;
+    --ink: #1b2233;
+    --muted: #5d6577;
+    --night: #18203a;
+    --night-2: #27335a;
+    --ember: #d9622b;
+    --line: #dcd6c8;
+    --card: #fffdf8;
+    --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 var(--body); }
+  a { color: inherit; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+  .mark { font: 600 22px var(--display); text-decoration: none; letter-spacing: .01em; }
+  nav { display: flex; gap: 22px; align-items: center; font-size: 15px; }
+  nav a { text-decoration: none; color: var(--muted); }
+  nav a:hover { color: var(--ink); }
+
+  .btn { display: inline-block; padding: 12px 22px; border-radius: 999px; background: var(--ember); color: #fff;
+         font-weight: 600; text-decoration: none; border: 0; cursor: pointer; font-size: 16px; }
+  .btn:hover { filter: brightness(1.08); }
+  /* No checkout page yet: hide the buy buttons. Delete this rule once CHECKOUT_URL is filled in. */
+  a[href="CHECKOUT_URL"] { display: none; }
+  .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+  nav .btn { padding: 8px 16px; color: #fff; font-size: 15px; }
+
+  .hero { display: grid; grid-template-columns: 1fr 1.15fr; gap: 40px; align-items: center; padding: 36px 0 72px; }
+  h1 { font: 600 clamp(38px, 6vw, 62px)/1.05 var(--display); margin: 0 0 18px; letter-spacing: -.01em; }
+  .lede { font-size: 19px; color: var(--muted); max-width: 30em; margin: 0 0 26px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .fine { font-size: 14px; color: var(--muted); margin-top: 16px; }
+
+  .sky { position: relative; height: 420px; border-radius: 22px; overflow: hidden;
+         background: linear-gradient(170deg, var(--night) 0%, var(--night-2) 100%); }
+  .sky canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .pane { position: absolute; border-radius: 10px; background: #eef0f5; box-shadow: 0 14px 34px rgba(0,0,0,.35); }
+  .pane::before { content: ""; position: absolute; left: 12px; top: 11px; width: 9px; height: 9px; border-radius: 50%;
+                  background: #c3c8d4; box-shadow: 15px 0 #c3c8d4, 30px 0 #c3c8d4; }
+  .pane i { position: absolute; left: 14px; right: 14px; height: 7px; border-radius: 4px; background: #d5d9e3; }
+  .pane.a { left: 8%; top: 44%; width: 46%; height: 40%; }
+  .pane.b { left: 48%; top: 22%; width: 42%; height: 46%; background: #fbf4e6; }
+  .pane.b::after { content: "warm"; position: absolute; right: 12px; top: 7px; font-size: 11px; letter-spacing: .08em;
+                   text-transform: uppercase; color: var(--ember); }
+  .hint { position: absolute; left: 16px; bottom: 30px; font-size: 13px; color: rgba(255,255,255,.7); }
+
+  section { padding: 64px 0; border-top: 1px solid var(--line); }
+  h2 { font: 600 clamp(28px, 4vw, 38px)/1.15 var(--display); margin: 0 0 10px; }
+  .sub { color: var(--muted); max-width: 36em; margin: 0 0 34px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+  .card h3 { font: 600 21px var(--display); margin: 0 0 8px; }
+  .card p { margin: 0; color: var(--muted); font-size: 16px; }
+  .num { font: 600 14px var(--body); color: var(--ember); letter-spacing: .08em; display: block; margin-bottom: 10px; }
+
+  .facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 40px; margin: 0; padding: 0; list-style: none; }
+  .facts li { padding-left: 22px; position: relative; }
+  .facts li::before { content: ""; position: absolute; left: 0; top: .62em; width: 9px; height: 9px; border-radius: 50%;
+                      background: var(--ember); }
+  .facts b { display: block; }
+  .facts span { color: var(--muted); font-size: 16px; }
+
+  .price { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; background: var(--night);
+           color: #fff; border-radius: 22px; padding: 44px; }
+  .price h2 { color: #fff; }
+  .price p { color: rgba(255,255,255,.72); margin: 0 0 22px; }
+  .amount { font: 600 64px/1 var(--display); }
+  .amount small { font: 400 17px var(--body); color: rgba(255,255,255,.7); margin-left: 8px; }
+  .price ul { margin: 0; padding: 0; list-style: none; }
+  .price li { padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.14); }
+  .price li:last-child { border: 0; }
+  .price .btn.ghost { color: #fff; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.6); }
+
+  details { border-bottom: 1px solid var(--line); padding: 16px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { color: var(--muted); margin: 10px 0 0; max-width: 44em; }
+
+  footer { padding: 34px 0 54px; color: var(--muted); font-size: 15px; display: flex; justify-content: space-between;
+           flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--line); }
+
+  @media (max-width: 820px) {
+    .hero, .price { grid-template-columns: 1fr; }
+    .grid, .facts { grid-template-columns: 1fr; }
+    .sky { height: 340px; }
+    nav a:not(.btn) { display: none; }
+    .price { padding: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="mark" href="#">Lapa</a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#details">Details</a>
+      <a href="#faq">Questions</a>
+      <a class="btn" href="#price">Get Lapa</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <div>
+      <h1>Snow that lands on your windows.</h1>
+      <p class="lede">Lapa is a tiny menu bar app for Mac. Snow drifts down across your desktop and piles up on the
+        windows you have left alone, while the one you are working in stays warm and clear.</p>
+      <div class="actions">
+        <a class="btn" href="CHECKOUT_URL">Buy for $6.99</a>
+        <a class="btn ghost" href="Lapa.dmg" download>Try free for 7 days</a>
+      </div>
+      <p class="fine">macOS 13 or later · Apple silicon and Intel · pay once</p>
+    </div>
+    <div class="sky" id="sky" aria-label="Live demo: snow settling on two windows">
+      <div class="pane a"><i style="top:36px"></i><i style="top:54px;right:40%"></i><i style="top:72px;right:22%"></i></div>
+      <div class="pane b"><i style="top:36px;background:#eadfc8"></i><i style="top:54px;right:30%;background:#eadfc8"></i></div>
+      <canvas id="snow"></canvas>
+      <span class="hint">Move your pointer through the drifts.</span>
+    </div>
+  </div>
+
+  <section id="how">
+    <h2>A quiet storm with three small rules</h2>
+    <p class="sub">“Lapa lapa” is how Turkish describes snow falling in big, slow flakes. That is the whole idea.</p>
+    <div class="grid">
+      <div class="card"><span class="num">01</span><h3>It settles where you are not</h3>
+        <p>Flakes land on the top edge of every open window and along the bottom of the screen, then build into soft drifts.</p></div>
+      <div class="card"><span class="num">02</span><h3>Your window stays warm</h3>
+        <p>The window you are working in melts its snow. Come back to an old one and you can see how long it sat untouched.</p></div>
+      <div class="card"><span class="num">03</span><h3>Sweep it, shake it</h3>
+        <p>Run the pointer through a drift to brush it off. Drag a window gently and the snow rides along; yank it and the snow falls.</p></div>
+    </div>
+  </section>
+
+  <section id="details">
+    <h2>Built to stay out of the way</h2>
+    <p class="sub">Lapa sits above your windows but never between you and your work.</p>
+    <ul class="facts">
+      <li><b>Clicks pass straight through</b><span>The snow layer ignores the mouse and keyboard entirely.</span></li>
+      <li><b>No permissions to grant</b><span>No Screen Recording, no Accessibility. Lapa only reads where windows are.</span></li>
+      <li><b>Private by default</b><span>No account and no analytics. Lapa stays offline unless you ask it to follow real weather.</span></li>
+      <li><b>Easy on the battery</b><span>Low Power Mode and Reduce Motion automatically thin the snowfall.</span></li>
+      <li><b>A plough for the deep days</b><span>When the snow along the bottom of the screen gets deep, a small orange plough drives through and clears it. Or send it yourself from the menu.</span></li>
+      <li><b>Four seasons</b><span>Not a winter person? Switch to autumn leaves or spring blossom tumbling past instead.</span></li>
+      <li><b>Snow or rain, your call</b><span>Flurry, steady or blizzard, with calm, breezy or gusty wind. Rain splashes on your windows and washes the drifts away.</span></li>
+      <li><b>Or follow the real sky</b><span>Pick a city and Lapa matches its forecast: snow when it snows, rain when it rains, nothing on a dry day.</span></li>
+      <li><b>Frost when you step away</b><span>Leave the Mac alone and ice creeps in from the edges of the screen. Touch anything and it clears.</span></li>
+      <li><b>A string of lights</b><span>Hang coloured bulbs under the menu bar for the long evenings.</span></li>
+      <li><b>In front or behind</b><span>Let it fall over your windows, or only across the desktop behind them.</span></li>
+      <li><b>Every screen, every Space</b><span>Each display gets its own snowfall, full-screen apps included.</span></li>
+    </ul>
+  </section>
+
+  <section id="price" style="border-top:0;padding-top:20px">
+    <div class="price">
+      <div>
+        <h2>One price, yours to keep</h2>
+        <p>Try everything free for seven days. If you like the weather, pay once.</p>
+        <div class="amount">$6.99<small>one time</small></div>
+        <div class="actions" style="margin-top:24px">
+          <a class="btn" href="CHECKOUT_URL">Buy Lapa</a>
+          <a class="btn ghost" href="Lapa.dmg" download>Download the trial</a>
+        </div>
+      </div>
+      <ul>
+        <li>Snow, rain, leaves, blossom and live weather</li>
+        <li>Plough, frost, lights and every wind setting</li>
+        <li>Works on every display you plug in</li>
+        <li>License key by email, checked offline</li>
+        <li>No subscription and no account</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="faq">
+    <h2>Questions</h2>
+    <details><summary>Will it get in the way of my work?</summary>
+      <p>No. The snow cannot be clicked, selected or focused, and you can pause it from the snowflake in the menu bar at any time.</p></details>
+    <details><summary>How do I activate it after buying?</summary>
+      <p>Your key arrives by email. Click the snowflake in the menu bar, choose “Enter license key…” and paste it in. The key is verified on your Mac, so it works offline.</p></details>
+    <details><summary>What happens when the trial ends?</summary>
+      <p>The snow stops and the menu offers to buy or enter a key. Nothing else on your Mac changes.</p></details>
+    <details><summary>What does the live weather send, and to whom?</summary>
+      <p>Only the rough coordinates of the city you type (rounded to about 10 km), and only to the Norwegian Meteorological Institute's public forecast service. Forecast data from MET Norway. Leave the option off and Lapa never connects to anything.</p></details>
+    <details><summary>Does it slow my Mac down?</summary>
+      <p>Lapa draws with the graphics card and uses a small share of one processor core. On battery, turn on Low Power Mode and it falls back to a lighter snowfall.</p></details>
+  </section>
+
+  <footer>
+    <span>Lapa · snow for people who stare at screens all winter</span>
+    <a href="#price">Get Lapa</a>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const sky = document.getElementById('sky');
+  const canvas = document.getElementById('snow');
+  const ctx = canvas.getContext('2d');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const COL = 3;
+  let W = 0, H = 0, ledges = [], flakes = [];
+  const pointer = { x: -999, y: -999, vx: 0 };
+
+  function layout() {
+    const box = sky.getBoundingClientRect();
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = box.width; H = box.height;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const old = ledges;
+    ledges = [...sky.querySelectorAll('.pane')].map(el => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left - box.left, y: r.top - box.top, w: r.width, bottom: r.bottom - box.top, cap: 13,
+               warm: el.classList.contains('b'), h: new Float32Array(Math.ceil(r.width / COL)), hide: null };
+    });
+    // The warm pane sits in front of the first one: no snow on the covered stretch.
+    if (ledges.length === 2) ledges[0].hide = ledges[1];
+    ledges.push({ x: 0, y: H, w: W, bottom: H, cap: 20, warm: false, h: new Float32Array(Math.ceil(W / COL)), hide: null });
+    ledges.forEach((l, i) => { if (old[i] && old[i].h.length === l.h.length) l.h = old[i].h; });
+    const count = still ? 50 : Math.round(W * H / 1900);
+    flakes = Array.from({ length: count }, () => spawn(true));
+  }
+
+  function spawn(anywhere) {
+    const d = 0.3 + 0.7 * Math.random();
+    return { x: Math.random() * W, y: anywhere ? Math.random() * H : -8, d, r: 0.8 + 1.9 * d,
+             p: Math.random() * 6.28, kx: 0 };
+  }
+
+  function covered(l, x) {
+    const o = l.hide;
+    return o && x >= o.x && x < o.x + o.w && l.y >= o.y && l.y < o.bottom;
+  }
+
+  let last = performance.now(), t = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+    const wind = 22 * Math.sin(t * 0.3);
+
+    for (let i = 0; i < flakes.length; i++) {
+      const f = flakes[i];
+      const py = f.y;
+      const dx = f.x - pointer.x, dy = f.y - pointer.y;
+      if (dx * dx + dy * dy < 4900) f.kx += pointer.vx * 0.04;
+      f.x += (wind * f.d + Math.sin(t * 1.3 + f.p) * 12 * f.d + f.kx) * dt;
+      f.y += (24 + 60 * f.d) * dt;
+      f.kx *= Math.exp(-2.2 * dt);
+      let landed = false;
+      if (f.d > 0.6) for (const l of ledges) {
+        if (f.x < l.x || f.x >= l.x + l.w || covered(l, f.x)) continue;
+        const c = Math.min(l.h.length - 1, ((f.x - l.x) / COL) | 0);
+        const level = l.y - l.h[c];
+        if (py <= level && f.y >= level && l.h[c] < l.cap) {
+          l.h[c] += f.r * 0.7;
+          if (c > 0) l.h[c - 1] += f.r * 0.35;
+          if (c + 1 < l.h.length) l.h[c + 1] += f.r * 0.35;
+          landed = true; break;
+        }
+      }
+      if (landed || f.y > H + 10) flakes[i] = spawn(false);
+      else if (f.x < -20) f.x += W + 40; else if (f.x > W + 20) f.x -= W + 40;
+    }
+
+    for (const l of ledges) {
+      const h = l.h;
+      for (let c = 0; c < h.length - 1; c++) {
+        const s = h[c] - h[c + 1];
+        if (s > 1.2) { h[c] -= (s - 1.2) / 4; h[c + 1] += (s - 1.2) / 4; }
+        else if (s < -1.2) { h[c] += (-s - 1.2) / 4; h[c + 1] -= (-s - 1.2) / 4; }
+      }
+      if (l.warm) for (let c = 0; c < h.length; c++) h[c] = Math.max(0, h[c] - 2.2 * dt);
+      // The pointer sweeps snow off a ledge.
+      if (pointer.x >= l.x && pointer.x < l.x + l.w) {
+        const c = Math.min(h.length - 1, ((pointer.x - l.x) / COL) | 0);
+        if (pointer.y > l.y - h[c] - 10 && pointer.y < l.y + 8)
+          for (let k = Math.max(0, c - 5); k <= Math.min(h.length - 1, c + 5); k++) h[k] *= 0.5;
+      }
+    }
+    pointer.vx *= 0.8;
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#fff';
+    for (const f of flakes) {
+      ctx.globalAlpha = 0.4 + 0.55 * f.d;
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.fill();
+    }
+    ctx.globalAlpha = 0.97;
+    for (const l of ledges) {
+      const h = l.h, n = h.length;
+      ctx.beginPath(); ctx.moveTo(l.x, l.y + 1);
+      for (let c = 0; c < n; c++) {
+        let sum = 0, m = 0;
+        for (let k = Math.max(0, c - 3); k <= Math.min(n - 1, c + 3); k++) { sum += h[k]; m++; }
+        const taper = Math.min(1, (c + 0.5) / 4, (n - c - 0.5) / 4);
+        const x = l.x + (c + 0.5) * COL;
+        ctx.lineTo(x, l.y + 1 - (covered(l, x) ? 0 : sum / m * taper));
+      }
+      ctx.lineTo(l.x + l.w, l.y + 1); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    if (!still) requestAnimationFrame(frame);
+  }
+
+  sky.addEventListener('pointermove', e => {
+    const box = sky.getBoundingClientRect();
+    const x = e.clientX - box.left;
+    pointer.vx = (x - pointer.x) * 30; pointer.x = x; pointer.y = e.clientY - box.top;
+  });
+  sky.addEventListener('pointerleave', () => { pointer.x = pointer.y = -999; pointer.vx = 0; });
+  addEventListener('resize', layout);
+  layout();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
